@@ -8,10 +8,8 @@ import android.content.pm.PackageManager
 import android.net.wifi.WifiManager
 import android.net.wifi.p2p.WifiP2pConfig
 import android.net.wifi.p2p.WifiP2pDevice
-import android.net.wifi.p2p.WifiP2pDeviceList
 import android.net.wifi.p2p.WifiP2pManager
-import android.os.Build
-import android.os.Bundle
+import android.os.*
 import android.provider.Settings
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
@@ -19,10 +17,18 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import corp.umbrella.wifidirectapp.adapter.DevicesAdapter
 import corp.umbrella.wifidirectapp.databinding.ActivityMainBinding
+import java.io.InputStream
+import java.io.OutputStream
+import java.lang.Exception
+import java.net.InetAddress
+import java.net.InetSocketAddress
+import java.net.ServerSocket
+import java.net.Socket
+import java.util.concurrent.Executors
 
 class MainActivity : AppCompatActivity() {
 
-     lateinit var binding: ActivityMainBinding
+    lateinit var binding: ActivityMainBinding
     private val wifiManager: WifiManager by lazy {
         applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
     }
@@ -66,11 +72,23 @@ class MainActivity : AppCompatActivity() {
             val groupOwnerAddress = it.groupOwnerAddress
             if (it.groupFormed && it.isGroupOwner) {
                 binding.connectionStatus.text = "Host"
+                isHost = true
+                serverClass = ServerClass()
+                serverClass?.start()
             } else if (it.groupFormed) {
                 binding.connectionStatus.text = "Client"
+                isHost = false
+                clientClass = ClientClass(groupOwnerAddress)
+                clientClass?.start()
             }
         }
     }
+
+    var socket: Socket? = null
+
+    var serverClass: ServerClass? = null
+    var clientClass: ClientClass? = null
+    var isHost: Boolean? = null
 
     companion object {
         private const val REQUEST_CODE_WIFI = 0
@@ -116,15 +134,27 @@ class MainActivity : AppCompatActivity() {
             val config = WifiP2pConfig()
             config.deviceAddress = device.deviceAddress
 
-            manager?.connect(channel, config, object: WifiP2pManager.ActionListener {
+            manager?.connect(channel, config, object : WifiP2pManager.ActionListener {
                 override fun onSuccess() {
-                    showToast("Connected to ${device.deviceName}" )
+                    showToast("Connected to ${device.deviceName}")
                 }
 
                 override fun onFailure(p0: Int) {
                     showToast("Connected failure")
                 }
             })
+        }
+
+        binding.buttonSend.setOnClickListener {
+            val executor = Executors.newSingleThreadExecutor()
+            val message = binding.writeMessage.text.toString()
+            executor.execute {
+                if (message.isNotBlank() && isHost == true) {
+                    serverClass?.write(message.toByteArray())
+                } else if (message.isNotBlank() && isHost == false) {
+                    clientClass?.write(message.toByteArray())
+                }
+            }
         }
     }
 
@@ -187,5 +217,98 @@ class MainActivity : AppCompatActivity() {
 
     private fun showToast(text: String) {
         Toast.makeText(this, text, Toast.LENGTH_LONG).show()
+    }
+
+    inner class ServerClass : Thread() {
+
+        var inputStream: InputStream? = null
+        var outputStream: OutputStream? = null
+
+        fun write(bytes: ByteArray) {
+            try {
+                outputStream?.write(bytes)
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+
+        override fun run() {
+            try {
+                val serverSocket = ServerSocket(8888)
+                socket = serverSocket.accept()
+                inputStream = socket?.getInputStream()
+                outputStream = socket?.getOutputStream()
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+            val executor = Executors.newSingleThreadExecutor()
+            val handler = Handler(Looper.getMainLooper())
+            executor.execute {
+                val buffer = ByteArray(1024)
+                var bytes: Int?
+                while (socket != null) {
+                    try {
+                        bytes = inputStream?.read(buffer)
+                        if (bytes != null && bytes > 0) {
+                            handler.post {
+                                val tempMessage = String(buffer, 0, bytes)
+                                binding.readMessage.text = tempMessage
+                            }
+                        }
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                    }
+                }
+            }
+        }
+    }
+
+    inner class ClientClass(private val hostAddress: InetAddress) : Thread() {
+
+        var hostAdd: String? = null
+        var inputStream: InputStream? = null
+        var outputStream: OutputStream? = null
+
+        init {
+            hostAdd = hostAddress.hostAddress
+            socket = Socket()
+        }
+
+        fun write(bytes: ByteArray) {
+            try {
+                outputStream?.write(bytes)
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+
+        override fun run() {
+            try {
+                socket?.connect(InetSocketAddress(hostAdd, 8888), 500)
+                inputStream = socket?.getInputStream()
+                outputStream = socket?.getOutputStream()
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+            val executor = Executors.newSingleThreadExecutor()
+            val handler = Handler(Looper.getMainLooper())
+            executor.execute {
+                val buffer = ByteArray(1024)
+                var bytes: Int?
+                while (socket != null) {
+                    try {
+                        bytes = inputStream?.read(buffer)
+                        if (bytes != null && bytes > 0) {
+                            handler.post {
+                                val tempMessage = String(buffer, 0, bytes)
+                                binding.readMessage.text = tempMessage
+                            }
+                        }
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                    }
+                }
+            }
+        }
     }
 }

@@ -9,6 +9,7 @@ import corp.umbrella.wifidirectapp.databinding.ItemDeviceBinding
 class DevicesAdapter: RecyclerView.Adapter<DeviceViewHolder>() {
 
     private var devices: List<WifiP2pDevice> = listOf()
+    var onDeviceClickListener: ((WifiP2pDevice) -> Unit)? = null
 
     fun setData(devices: List<WifiP2pDevice>) {
         this.devices = devices
@@ -23,6 +24,9 @@ class DevicesAdapter: RecyclerView.Adapter<DeviceViewHolder>() {
     override fun onBindViewHolder(holder: DeviceViewHolder, position: Int) {
         val device = devices[position]
         holder.bind(device)
+        holder.itemView.setOnClickListener {
+            onDeviceClickListener?.invoke(device)
+        }
     }
 
     override fun getItemCount(): Int {

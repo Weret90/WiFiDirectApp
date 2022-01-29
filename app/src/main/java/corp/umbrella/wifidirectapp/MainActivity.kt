@@ -6,6 +6,7 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.net.wifi.WifiManager
+import android.net.wifi.p2p.WifiP2pConfig
 import android.net.wifi.p2p.WifiP2pDevice
 import android.net.wifi.p2p.WifiP2pDeviceList
 import android.net.wifi.p2p.WifiP2pManager
@@ -21,7 +22,7 @@ import corp.umbrella.wifidirectapp.databinding.ActivityMainBinding
 
 class MainActivity : AppCompatActivity() {
 
-    private lateinit var binding: ActivityMainBinding
+     lateinit var binding: ActivityMainBinding
     private val wifiManager: WifiManager by lazy {
         applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
     }
@@ -56,6 +57,17 @@ class MainActivity : AppCompatActivity() {
             }
             if (peers.size == 0) {
                 showToast("Devices Not Found")
+            }
+        }
+    }
+
+    val connectionInfoListener: WifiP2pManager.ConnectionInfoListener by lazy {
+        WifiP2pManager.ConnectionInfoListener {
+            val groupOwnerAddress = it.groupOwnerAddress
+            if (it.groupFormed && it.isGroupOwner) {
+                binding.connectionStatus.text = "Host"
+            } else if (it.groupFormed) {
+                binding.connectionStatus.text = "Client"
             }
         }
     }
@@ -96,6 +108,21 @@ class MainActivity : AppCompatActivity() {
 
                 override fun onFailure(i: Int) {
                     binding.connectionStatus.text = "Discovery Starting Failed"
+                }
+            })
+        }
+
+        adapter.onDeviceClickListener = { device ->
+            val config = WifiP2pConfig()
+            config.deviceAddress = device.deviceAddress
+
+            manager?.connect(channel, config, object: WifiP2pManager.ActionListener {
+                override fun onSuccess() {
+                    showToast("Connected to ${device.deviceName}" )
+                }
+
+                override fun onFailure(p0: Int) {
+                    showToast("Connected failure")
                 }
             })
         }

@@ -16,6 +16,10 @@ class DevicesAdapter: RecyclerView.Adapter<DeviceViewHolder>() {
         notifyDataSetChanged()
     }
 
+    fun getData(): List<WifiP2pDevice> {
+        return devices.toList()
+    }
+
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): DeviceViewHolder {
         val binding = ItemDeviceBinding.inflate(LayoutInflater.from(parent.context), parent, false)
         return DeviceViewHolder(binding)

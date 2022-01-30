@@ -5,33 +5,28 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.PackageManager
+import android.net.ConnectivityManager
+import android.net.wifi.WifiManager
 import android.net.wifi.p2p.WifiP2pConfig
-import android.net.wifi.p2p.WifiP2pDevice
+import android.net.wifi.p2p.WifiP2pInfo
 import android.net.wifi.p2p.WifiP2pManager
 import android.os.Build
 import android.os.Bundle
-import android.os.Handler
-import android.os.Looper
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import corp.umbrella.wifidirectapp.adapter.DevicesAdapter
 import corp.umbrella.wifidirectapp.databinding.ActivityMainBinding
-import java.io.InputStream
-import java.io.OutputStream
-import java.net.InetAddress
-import java.net.InetSocketAddress
-import java.net.ServerSocket
-import java.net.Socket
+import corp.umbrella.wifidirectapp.receiver.WiFiDirectBroadcastReceiver
+import corp.umbrella.wifidirectapp.utils.ClientClass
+import corp.umbrella.wifidirectapp.utils.ServerClass
 import java.util.concurrent.Executors
 
 class MainActivity : AppCompatActivity() {
 
     lateinit var binding: ActivityMainBinding
-    private val manager: WifiP2pManager? by lazy(LazyThreadSafetyMode.NONE) {
-        getSystemService(Context.WIFI_P2P_SERVICE) as WifiP2pManager?
-    }
+    private var manager: WifiP2pManager? = null
     private var channel: WifiP2pManager.Channel? = null
     private var receiver: WiFiDirectBroadcastReceiver? = null
 
@@ -46,16 +41,13 @@ class MainActivity : AppCompatActivity() {
     private val adapter: DevicesAdapter by lazy {
         DevicesAdapter()
     }
-    private var peers: MutableList<WifiP2pDevice> = mutableListOf()
 
     val peerListListener by lazy {
         WifiP2pManager.PeerListListener {
-            if (!it.deviceList.equals(peers)) {
-                peers.clear()
-                peers.addAll(it.deviceList)
-                adapter.setData(peers)
+            if (it.deviceList != adapter.getData()) {
+                adapter.setData(it.deviceList.toList())
             }
-            if (peers.size == 0) {
+            if (adapter.getData().isEmpty()) {
                 showToast("Devices Not Found")
             }
         }
@@ -63,25 +55,23 @@ class MainActivity : AppCompatActivity() {
 
     val connectionInfoListener: WifiP2pManager.ConnectionInfoListener by lazy {
         WifiP2pManager.ConnectionInfoListener {
-            val groupOwnerAddress = it.groupOwnerAddress
             if (it.groupFormed && it.isGroupOwner) {
                 binding.connectionStatus.text = "Host"
                 isHost = true
-                serverClass = ServerClass()
+                serverClass = ServerClass(binding.readMessage)
                 serverClass?.start()
             } else if (it.groupFormed) {
                 binding.connectionStatus.text = "Client"
                 isHost = false
-                clientClass = ClientClass(groupOwnerAddress)
+                clientClass = ClientClass(it.groupOwnerAddress, binding.readMessage)
                 clientClass?.start()
             }
         }
     }
 
-    var socket: Socket? = null
-
     var serverClass: ServerClass? = null
     var clientClass: ClientClass? = null
+
     var isHost: Boolean? = null
 
     companion object {
@@ -100,6 +90,7 @@ class MainActivity : AppCompatActivity() {
             checkLocationPermission()
         }
 
+        manager = getSystemService(Context.WIFI_P2P_SERVICE) as WifiP2pManager?
         channel = manager?.initialize(this, mainLooper, null)
         receiver = WiFiDirectBroadcastReceiver(manager, channel, this)
 
@@ -108,11 +99,11 @@ class MainActivity : AppCompatActivity() {
         binding.discoverButton.setOnClickListener {
             manager?.discoverPeers(channel, object : WifiP2pManager.ActionListener {
                 override fun onSuccess() {
-                    binding.connectionStatus.text = "Discovery Started"
+                    binding.connectionStatus.text = "Поиск устройств"
                 }
 
                 override fun onFailure(i: Int) {
-                    binding.connectionStatus.text = "Discovery Starting Failed"
+                    binding.connectionStatus.text = "Поиск устройств: ошибка"
                 }
             })
         }
@@ -123,11 +114,11 @@ class MainActivity : AppCompatActivity() {
 
             manager?.connect(channel, config, object : WifiP2pManager.ActionListener {
                 override fun onSuccess() {
-                    showToast("Connected to ${device.deviceName}")
+                    showToast("Установлена связь с ${device.deviceName}")
                 }
 
                 override fun onFailure(p0: Int) {
-                    showToast("Connected failure")
+                    showToast("Ошибка при установке связи")
                 }
             })
         }
@@ -155,6 +146,18 @@ class MainActivity : AppCompatActivity() {
         unregisterReceiver(receiver)
     }
 
+    override fun onStop() {
+        manager?.removeGroup(channel, object : WifiP2pManager.ActionListener {
+            override fun onSuccess() {
+                showToast("Соединение было разорвано")
+            }
+
+            override fun onFailure(p0: Int) {
+            }
+        })
+        super.onStop()
+    }
+
     private fun checkLocationPermission() {
         if (
             ContextCompat.checkSelfPermission(
@@ -162,7 +165,7 @@ class MainActivity : AppCompatActivity() {
                 Manifest.permission.ACCESS_FINE_LOCATION
             ) == PackageManager.PERMISSION_GRANTED
         ) {
-            showToast("Разрешения были даны ранее")
+            //ничего не делаем
         } else {
             ActivityCompat.requestPermissions(
                 this,
@@ -180,108 +183,16 @@ class MainActivity : AppCompatActivity() {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         if (requestCode == REQUEST_CODE_LOCATION) {
             if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                showToast("Разрешения даны только что")
+                //ничего не делаем
             } else {
                 showToast("Для корректной работы приложения требуется дать необходимые разрешения")
+                finish()
             }
         }
     }
 
     private fun showToast(text: String) {
         Toast.makeText(this, text, Toast.LENGTH_LONG).show()
-    }
-
-    inner class ServerClass : Thread() {
-
-        var inputStream: InputStream? = null
-        var outputStream: OutputStream? = null
-
-        fun write(bytes: ByteArray) {
-            try {
-                outputStream?.write(bytes)
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
-        }
-
-        override fun run() {
-            try {
-                val serverSocket = ServerSocket(8888)
-                socket = serverSocket.accept()
-                inputStream = socket?.getInputStream()
-                outputStream = socket?.getOutputStream()
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
-            val executor = Executors.newSingleThreadExecutor()
-            val handler = Handler(Looper.getMainLooper())
-            executor.execute {
-                val buffer = ByteArray(1024)
-                var bytes: Int?
-                while (socket != null) {
-                    try {
-                        bytes = inputStream?.read(buffer)
-                        if (bytes != null && bytes > 0) {
-                            handler.post {
-                                val tempMessage = String(buffer, 0, bytes)
-                                binding.readMessage.text = tempMessage
-                            }
-                        }
-                    } catch (e: Exception) {
-                        e.printStackTrace()
-                    }
-                }
-            }
-        }
-    }
-
-    inner class ClientClass(private val hostAddress: InetAddress) : Thread() {
-
-        var hostAdd: String? = null
-        var inputStream: InputStream? = null
-        var outputStream: OutputStream? = null
-
-        init {
-            hostAdd = hostAddress.hostAddress
-            socket = Socket()
-        }
-
-        fun write(bytes: ByteArray) {
-            try {
-                outputStream?.write(bytes)
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
-        }
-
-        override fun run() {
-            try {
-                socket?.connect(InetSocketAddress(hostAdd, 8888), 500)
-                inputStream = socket?.getInputStream()
-                outputStream = socket?.getOutputStream()
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
-            val executor = Executors.newSingleThreadExecutor()
-            val handler = Handler(Looper.getMainLooper())
-            executor.execute {
-                val buffer = ByteArray(1024)
-                var bytes: Int?
-                while (socket != null) {
-                    try {
-                        bytes = inputStream?.read(buffer)
-                        if (bytes != null && bytes > 0) {
-                            handler.post {
-                                val tempMessage = String(buffer, 0, bytes)
-                                binding.readMessage.text = tempMessage
-                            }
-                        }
-                    } catch (e: Exception) {
-                        e.printStackTrace()
-                    }
-                }
-            }
-        }
     }
 
     fun navigateToStartActivity() {

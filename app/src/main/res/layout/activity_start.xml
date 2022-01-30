@@ -13,7 +13,7 @@
         android:layout_height="wrap_content"
         android:layout_margin="16dp"
         android:gravity="center"
-        android:text="Для работы приложения требуется включить Wi-Fi" />
+        android:text="Для работы приложения требуется включить Wi-Fi. Также обратите внимание, что если включена мобильная точка доступа - это может привести к ошибкам в приложении - отключите точку доступа" />
 
     <Button
         android:id="@+id/check_wifi_status"

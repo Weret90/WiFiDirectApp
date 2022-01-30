@@ -5,12 +5,13 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.PackageManager
-import android.net.wifi.WifiManager
 import android.net.wifi.p2p.WifiP2pConfig
 import android.net.wifi.p2p.WifiP2pDevice
 import android.net.wifi.p2p.WifiP2pManager
-import android.os.*
-import android.provider.Settings
+import android.os.Build
+import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
@@ -19,7 +20,6 @@ import corp.umbrella.wifidirectapp.adapter.DevicesAdapter
 import corp.umbrella.wifidirectapp.databinding.ActivityMainBinding
 import java.io.InputStream
 import java.io.OutputStream
-import java.lang.Exception
 import java.net.InetAddress
 import java.net.InetSocketAddress
 import java.net.ServerSocket
@@ -29,18 +29,12 @@ import java.util.concurrent.Executors
 class MainActivity : AppCompatActivity() {
 
     lateinit var binding: ActivityMainBinding
-    private val wifiManager: WifiManager by lazy {
-        applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
-    }
-    private val manager: WifiP2pManager? by lazy {
+    private val manager: WifiP2pManager? by lazy(LazyThreadSafetyMode.NONE) {
         getSystemService(Context.WIFI_P2P_SERVICE) as WifiP2pManager?
     }
-    private val channel: WifiP2pManager.Channel? by lazy {
-        manager?.initialize(this, mainLooper, null)
-    }
-    private val receiver: WiFiDirectBroadcastReceiver by lazy {
-        WiFiDirectBroadcastReceiver(manager, channel, this)
-    }
+    private var channel: WifiP2pManager.Channel? = null
+    private var receiver: WiFiDirectBroadcastReceiver? = null
+
     private val intentFilter: IntentFilter by lazy {
         IntentFilter().apply {
             addAction(WifiP2pManager.WIFI_P2P_STATE_CHANGED_ACTION)
@@ -91,8 +85,10 @@ class MainActivity : AppCompatActivity() {
     var isHost: Boolean? = null
 
     companion object {
-        private const val REQUEST_CODE_WIFI = 0
         private const val REQUEST_CODE_LOCATION = 1
+        fun newIntent(context: Context): Intent {
+            return Intent(context, MainActivity::class.java)
+        }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -104,19 +100,10 @@ class MainActivity : AppCompatActivity() {
             checkLocationPermission()
         }
 
-        checkWifiStatusAndInitButtonText()
+        channel = manager?.initialize(this, mainLooper, null)
+        receiver = WiFiDirectBroadcastReceiver(manager, channel, this)
 
         binding.devicesRv.adapter = adapter
-
-        binding.wifiButton.setOnClickListener {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                val panelIntent = Intent(Settings.Panel.ACTION_INTERNET_CONNECTIVITY)
-                startActivityForResult(panelIntent, REQUEST_CODE_WIFI)
-            } else {
-                wifiManager.isWifiEnabled = !wifiManager.isWifiEnabled
-                checkWifiStatusAndInitButtonText()
-            }
-        }
 
         binding.discoverButton.setOnClickListener {
             manager?.discoverPeers(channel, object : WifiP2pManager.ActionListener {
@@ -166,21 +153,6 @@ class MainActivity : AppCompatActivity() {
     override fun onPause() {
         super.onPause()
         unregisterReceiver(receiver)
-    }
-
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        super.onActivityResult(requestCode, resultCode, data)
-        if (requestCode == REQUEST_CODE_WIFI) {
-            checkWifiStatusAndInitButtonText()
-        }
-    }
-
-    private fun checkWifiStatusAndInitButtonText() {
-        if (wifiManager.isWifiEnabled) {
-            binding.wifiButton.text = "WiFi On"
-        } else {
-            binding.wifiButton.text = "WiFi Off"
-        }
     }
 
     private fun checkLocationPermission() {
@@ -310,5 +282,10 @@ class MainActivity : AppCompatActivity() {
                 }
             }
         }
+    }
+
+    fun navigateToStartActivity() {
+        startActivity(StartActivity.newIntent(this))
+        finish()
     }
 }

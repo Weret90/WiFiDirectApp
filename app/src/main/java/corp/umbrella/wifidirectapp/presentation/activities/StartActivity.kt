@@ -1,4 +1,4 @@
-package corp.umbrella.wifidirectapp
+package corp.umbrella.wifidirectapp.presentation.activities
 
 import android.content.Context
 import android.content.Intent

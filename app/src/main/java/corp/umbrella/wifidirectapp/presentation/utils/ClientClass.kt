@@ -1,19 +1,27 @@
-package corp.umbrella.wifidirectapp.utils
+package corp.umbrella.wifidirectapp.presentation.utils
 
 import android.os.Handler
 import android.os.Looper
 import android.widget.TextView
+import corp.umbrella.wifidirectapp.presentation.activities.MainActivity
 import java.io.InputStream
 import java.io.OutputStream
-import java.net.ServerSocket
+import java.net.InetAddress
+import java.net.InetSocketAddress
 import java.net.Socket
 import java.util.concurrent.Executors
 
-class ServerClass(private val readMessage: TextView) : Thread() {
+class ClientClass(hostAddress: InetAddress, private val activity: MainActivity) : Thread() {
 
+    private var hostAdd: String? = null
     private var inputStream: InputStream? = null
     private var outputStream: OutputStream? = null
     private var socket: Socket? = null
+
+    init {
+        hostAdd = hostAddress.hostAddress
+        socket = Socket()
+    }
 
     fun write(bytes: ByteArray) {
         try {
@@ -25,8 +33,7 @@ class ServerClass(private val readMessage: TextView) : Thread() {
 
     override fun run() {
         try {
-            val serverSocket = ServerSocket(8888)
-            socket = serverSocket.accept()
+            socket?.connect(InetSocketAddress(hostAdd, 8888), 500)
             inputStream = socket?.getInputStream()
             outputStream = socket?.getOutputStream()
         } catch (e: Exception) {
@@ -43,7 +50,7 @@ class ServerClass(private val readMessage: TextView) : Thread() {
                     if (bytes != null && bytes > 0) {
                         handler.post {
                             val tempMessage = String(buffer, 0, bytes)
-                            readMessage.text = tempMessage
+                            activity.saveInputMessage(tempMessage)
                         }
                     }
                 } catch (e: Exception) {

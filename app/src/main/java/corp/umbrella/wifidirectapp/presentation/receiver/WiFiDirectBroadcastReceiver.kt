@@ -1,4 +1,4 @@
-package corp.umbrella.wifidirectapp.receiver
+package corp.umbrella.wifidirectapp.presentation.receiver
 
 import android.Manifest
 import android.content.BroadcastReceiver
@@ -8,7 +8,7 @@ import android.content.pm.PackageManager
 import android.net.NetworkInfo
 import android.net.wifi.p2p.WifiP2pManager
 import androidx.core.app.ActivityCompat
-import corp.umbrella.wifidirectapp.MainActivity
+import corp.umbrella.wifidirectapp.presentation.activities.MainActivity
 
 class WiFiDirectBroadcastReceiver(
     private val manager: WifiP2pManager?,

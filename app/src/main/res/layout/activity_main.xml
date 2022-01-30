@@ -6,7 +6,7 @@
     android:layout_height="match_parent"
     android:gravity="center"
     android:orientation="vertical"
-    tools:context=".MainActivity">
+    tools:context=".presentation.activities.MainActivity">
 
     <TextView
         android:id="@+id/connection_status"
@@ -30,14 +30,13 @@
         android:layout_margin="16dp"
         android:text="Искать устройства" />
 
-    <TextView
-        android:id="@+id/read_message"
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/read_message_rv"
         android:layout_width="match_parent"
-        android:layout_height="50dp"
+        android:layout_height="200dp"
         android:layout_marginHorizontal="16dp"
         android:background="@android:color/holo_orange_light"
-        android:gravity="center"
-        android:text="Сюда будут приходить сообщения" />
+        app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager" />
 
     <EditText
         android:id="@+id/write_message"
@@ -51,5 +50,13 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Отправить сообщение" />
+
+    <Button
+        android:id="@+id/button_clear_messages"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:text="Очистить экран" />
+
 
 </LinearLayout>

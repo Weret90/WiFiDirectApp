@@ -1,4 +1,4 @@
-package corp.umbrella.wifidirectapp.adapter
+package corp.umbrella.wifidirectapp.presentation.adapter
 
 import android.net.wifi.p2p.WifiP2pDevice
 import android.view.LayoutInflater

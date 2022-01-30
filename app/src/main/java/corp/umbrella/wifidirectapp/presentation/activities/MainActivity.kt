@@ -1,4 +1,4 @@
-package corp.umbrella.wifidirectapp
+package corp.umbrella.wifidirectapp.presentation.activities
 
 import android.Manifest
 import android.content.Context
@@ -13,11 +13,15 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
-import corp.umbrella.wifidirectapp.adapter.DevicesAdapter
+import corp.umbrella.wifidirectapp.presentation.adapter.DevicesAdapter
 import corp.umbrella.wifidirectapp.databinding.ActivityMainBinding
-import corp.umbrella.wifidirectapp.receiver.WiFiDirectBroadcastReceiver
-import corp.umbrella.wifidirectapp.utils.ClientClass
-import corp.umbrella.wifidirectapp.utils.ServerClass
+import corp.umbrella.wifidirectapp.domain.entity.Note
+import corp.umbrella.wifidirectapp.presentation.adapter.NotesAdapter
+import corp.umbrella.wifidirectapp.presentation.receiver.WiFiDirectBroadcastReceiver
+import corp.umbrella.wifidirectapp.presentation.utils.ClientClass
+import corp.umbrella.wifidirectapp.presentation.utils.ServerClass
+import corp.umbrella.wifidirectapp.presentation.viewmodel.MainActivityViewModel
+import org.koin.androidx.viewmodel.ext.android.viewModel
 import java.util.concurrent.Executors
 
 class MainActivity : AppCompatActivity() {
@@ -35,16 +39,22 @@ class MainActivity : AppCompatActivity() {
             addAction(WifiP2pManager.WIFI_P2P_THIS_DEVICE_CHANGED_ACTION)
         }
     }
-    private val adapter: DevicesAdapter by lazy {
+    private val deviceAdapter: DevicesAdapter by lazy {
         DevicesAdapter()
     }
 
+    private val notesAdapter: NotesAdapter by lazy {
+        NotesAdapter()
+    }
+
+    private val viewModel: MainActivityViewModel by viewModel()
+
     val peerListListener by lazy {
         WifiP2pManager.PeerListListener {
-            if (it.deviceList != adapter.getData()) {
-                adapter.setData(it.deviceList.toList())
+            if (it.deviceList != deviceAdapter.getData()) {
+                deviceAdapter.setData(it.deviceList.toList())
             }
-            if (adapter.getData().isEmpty()) {
+            if (deviceAdapter.getData().isEmpty()) {
                 showToast("Устройства не обнаружены")
             }
         }
@@ -55,12 +65,12 @@ class MainActivity : AppCompatActivity() {
             if (it.groupFormed && it.isGroupOwner) {
                 binding.connectionStatus.text = "Host (связь установлена)"
                 isHost = true
-                serverClass = ServerClass(binding.readMessage)
+                serverClass = ServerClass(this)
                 serverClass?.start()
             } else if (it.groupFormed) {
                 binding.connectionStatus.text = "Client (связь установлена)"
                 isHost = false
-                clientClass = ClientClass(it.groupOwnerAddress, binding.readMessage)
+                clientClass = ClientClass(it.groupOwnerAddress, this)
                 clientClass?.start()
             }
         }
@@ -91,7 +101,8 @@ class MainActivity : AppCompatActivity() {
         channel = manager?.initialize(this, mainLooper, null)
         receiver = WiFiDirectBroadcastReceiver(manager, channel, this)
 
-        binding.devicesRv.adapter = adapter
+        binding.devicesRv.adapter = deviceAdapter
+        binding.readMessageRv.adapter = notesAdapter
 
         binding.discoverButton.setOnClickListener {
             manager?.discoverPeers(channel, object : WifiP2pManager.ActionListener {
@@ -105,7 +116,7 @@ class MainActivity : AppCompatActivity() {
             })
         }
 
-        adapter.onDeviceClickListener = { device ->
+        deviceAdapter.onDeviceClickListener = { device ->
             val config = WifiP2pConfig()
             config.deviceAddress = device.deviceAddress
 
@@ -125,11 +136,21 @@ class MainActivity : AppCompatActivity() {
             val message = binding.writeMessage.text.toString()
             executor.execute {
                 if (message.isNotBlank() && isHost == true) {
+                    saveOutputMessage(message)
                     serverClass?.write(message.toByteArray())
                 } else if (message.isNotBlank() && isHost == false) {
+                    saveOutputMessage(message)
                     clientClass?.write(message.toByteArray())
                 }
             }
+        }
+
+        binding.buttonClearMessages.setOnClickListener {
+            viewModel.deleteNotes()
+        }
+
+        viewModel.getNotes().observe(this) {
+            notesAdapter.setData(it)
         }
     }
 
@@ -147,7 +168,7 @@ class MainActivity : AppCompatActivity() {
         manager?.removeGroup(channel, object : WifiP2pManager.ActionListener {
             override fun onSuccess() {
                 showToast("Соединение было разорвано")
-                adapter.setData(listOf())
+                deviceAdapter.setData(listOf())
                 binding.connectionStatus.text = "Нет активной связи"
             }
 
@@ -193,6 +214,16 @@ class MainActivity : AppCompatActivity() {
 
     private fun showToast(text: String) {
         Toast.makeText(this, text, Toast.LENGTH_LONG).show()
+    }
+
+    fun saveInputMessage(message: String) {
+        val note = Note(fromWho = "От другого: ", text = message)
+        viewModel.saveNote(note)
+    }
+
+    private fun saveOutputMessage(message: String) {
+        val note = Note(fromWho = "От меня: ", text = message)
+        viewModel.saveNote(note)
     }
 
     fun navigateToStartActivity() {

@@ -42,7 +42,7 @@ class WiFiDirectBroadcastReceiver(
                         if (networkInfo.isConnected) {
                             manager.requestConnectionInfo(channel, activity.connectionInfoListener)
                         } else {
-                            activity.binding.connectionStatus.text = "Device Disconnected"
+                            activity.binding.connectionStatus.text = "Нет установленной связи"
                         }
                     }
                 }

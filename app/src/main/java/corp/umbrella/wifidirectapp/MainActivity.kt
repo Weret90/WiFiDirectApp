@@ -5,10 +5,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.PackageManager
-import android.net.ConnectivityManager
-import android.net.wifi.WifiManager
 import android.net.wifi.p2p.WifiP2pConfig
-import android.net.wifi.p2p.WifiP2pInfo
 import android.net.wifi.p2p.WifiP2pManager
 import android.os.Build
 import android.os.Bundle
@@ -48,7 +45,7 @@ class MainActivity : AppCompatActivity() {
                 adapter.setData(it.deviceList.toList())
             }
             if (adapter.getData().isEmpty()) {
-                showToast("Devices Not Found")
+                showToast("Устройства не обнаружены")
             }
         }
     }
@@ -56,12 +53,12 @@ class MainActivity : AppCompatActivity() {
     val connectionInfoListener: WifiP2pManager.ConnectionInfoListener by lazy {
         WifiP2pManager.ConnectionInfoListener {
             if (it.groupFormed && it.isGroupOwner) {
-                binding.connectionStatus.text = "Host"
+                binding.connectionStatus.text = "Host (связь установлена)"
                 isHost = true
                 serverClass = ServerClass(binding.readMessage)
                 serverClass?.start()
             } else if (it.groupFormed) {
-                binding.connectionStatus.text = "Client"
+                binding.connectionStatus.text = "Client (связь установлена)"
                 isHost = false
                 clientClass = ClientClass(it.groupOwnerAddress, binding.readMessage)
                 clientClass?.start()
@@ -150,9 +147,12 @@ class MainActivity : AppCompatActivity() {
         manager?.removeGroup(channel, object : WifiP2pManager.ActionListener {
             override fun onSuccess() {
                 showToast("Соединение было разорвано")
+                adapter.setData(listOf())
+                binding.connectionStatus.text = "Нет активной связи"
             }
 
             override fun onFailure(p0: Int) {
+                //ничего не делаем
             }
         })
         super.onStop()

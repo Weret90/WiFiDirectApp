@@ -12,43 +12,44 @@
         android:id="@+id/connection_status"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Status" />
-
-    <Button
-        android:id="@+id/wifi_button"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="WiFi" />
+        android:layout_margin="16dp"
+        android:text="Нет установленной связи" />
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/devices_rv"
         android:layout_width="wrap_content"
-        android:layout_height="80dp"
-        app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager" />
+        android:layout_height="50dp"
+        app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
+        tools:itemCount="1"
+        tools:listitem="@layout/item_device" />
 
     <Button
         android:id="@+id/discover_button"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Discover" />
+        android:layout_margin="16dp"
+        android:text="Искать устройства" />
 
     <TextView
-        android:text="123"
         android:id="@+id/read_message"
-        android:layout_width="300dp"
+        android:layout_width="match_parent"
         android:layout_height="50dp"
-        android:gravity="center" />
+        android:layout_marginHorizontal="16dp"
+        android:background="@android:color/holo_orange_light"
+        android:gravity="center"
+        android:text="Сюда будут приходить сообщения" />
+
+    <EditText
+        android:id="@+id/write_message"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_margin="16dp"
+        android:hint="Напишите что-нибудь и отправьте" />
 
     <Button
         android:id="@+id/button_send"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Send" />
-
-    <EditText
-        android:hint="write"
-        android:id="@+id/write_message"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"/>
+        android:text="Отправить сообщение" />
 
 </LinearLayout>

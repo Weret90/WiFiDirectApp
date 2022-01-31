@@ -12,13 +12,13 @@
         android:id="@+id/connection_status"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_margin="16dp"
-        android:text="Нет установленной связи" />
+        android:layout_margin="@dimen/default_margin"
+        android:text="@string/connection_status_zero" />
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/devices_rv"
         android:layout_width="wrap_content"
-        android:layout_height="50dp"
+        android:layout_height="@dimen/device_rv_height"
         app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
         tools:itemCount="1"
         tools:listitem="@layout/item_device" />
@@ -27,14 +27,14 @@
         android:id="@+id/discover_button"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_margin="16dp"
-        android:text="Искать устройства" />
+        android:layout_margin="@dimen/default_margin"
+        android:text="@string/button_discover" />
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/read_message_rv"
         android:layout_width="match_parent"
-        android:layout_height="200dp"
-        android:layout_marginHorizontal="16dp"
+        android:layout_height="@dimen/read_messages_rv_height"
+        android:layout_marginHorizontal="@dimen/default_margin"
         android:background="@android:color/holo_orange_light"
         app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager" />
 
@@ -42,21 +42,23 @@
         android:id="@+id/write_message"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_margin="16dp"
-        android:hint="Напишите что-нибудь и отправьте" />
+        android:layout_margin="@dimen/default_margin"
+        android:hint="@string/write_message_hint"
+        android:importantForAutofill="no"
+        android:inputType="text" />
 
     <Button
         android:id="@+id/button_send"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Отправить сообщение" />
+        android:text="@string/button_send_message" />
 
     <Button
         android:id="@+id/button_clear_messages"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
-        android:text="Очистить экран" />
+        android:layout_marginTop="@dimen/default_margin"
+        android:text="@string/button_clear_messages" />
 
 
 </LinearLayout>

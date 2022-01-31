@@ -1,3 +1,22 @@
 <resources>
     <string name="app_name">WiFi Direct App</string>
+    <string name="devices_not_found">Устройства не обнаружены</string>
+    <string name="connection_status_host">Host (связь установлена)</string>
+    <string name="connection_status_client">Client (связь установлена)</string>
+    <string name="search_devices_in_process">Поиск устройств</string>
+    <string name="search_devices_failure">Поиск устройств: ошибка</string>
+    <string name="connection_success">Установлена связь с %s</string>
+    <string name="connection_failure">Ошибка при попытке установить связь</string>
+    <string name="connection_is_disable">Соединение было разорвано</string>
+    <string name="connection_status_zero">Нет установленной связи</string>
+    <string name="message_permission_denied">Для корректной работы приложения требуется дать необходимые разрешения</string>
+    <string name="label_input_message">Другое устройство:\u0020</string>
+    <string name="label_output_message">Мое устройство:\u0020</string>
+    <string name="toast_wifi_is_off">Включите Wi-Fi и нажмите на кнопку</string>
+    <string name="button_discover">Искать устройства</string>
+    <string name="write_message_hint">Напишите что-нибудь и отправьте</string>
+    <string name="button_send_message">Отправить сообщение</string>
+    <string name="button_clear_messages">Очистить экран</string>
+    <string name="wifi_is_off_message">Для работы приложения требуется включить Wi-Fi. Также обратите внимание, что если включена мобильная точка доступа - это может привести к ошибкам в приложении - отключите точку доступа</string>
+    <string name="button_check_wifi_status">Wi-Fi был включен</string>
 </resources>

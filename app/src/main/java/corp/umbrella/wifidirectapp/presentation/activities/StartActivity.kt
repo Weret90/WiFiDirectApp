@@ -6,6 +6,7 @@ import android.net.wifi.WifiManager
 import android.os.Bundle
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import corp.umbrella.wifidirectapp.R
 import corp.umbrella.wifidirectapp.databinding.ActivityStartBinding
 
 class StartActivity : AppCompatActivity() {
@@ -38,7 +39,7 @@ class StartActivity : AppCompatActivity() {
             startActivity(MainActivity.newIntent(this))
             finish()
         } else {
-            Toast.makeText(this, "Включите Wi-Fi и нажмите на кнопку", Toast.LENGTH_LONG).show()
+            Toast.makeText(this, getString(R.string.toast_wifi_is_off), Toast.LENGTH_LONG).show()
         }
     }
 }

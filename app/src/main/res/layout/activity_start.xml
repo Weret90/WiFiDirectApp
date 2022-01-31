@@ -1,24 +1,23 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:gravity="center"
     android:orientation="vertical"
-    tools:context=".StartActivity">
+    tools:context=".presentation.activities.StartActivity">
 
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_margin="16dp"
+        android:layout_margin="@dimen/default_margin"
         android:gravity="center"
-        android:text="Для работы приложения требуется включить Wi-Fi. Также обратите внимание, что если включена мобильная точка доступа - это может привести к ошибкам в приложении - отключите точку доступа" />
+        android:text="@string/wifi_is_off_message" />
 
     <Button
         android:id="@+id/check_wifi_status"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Wi-Fi был включен" />
+        android:text="@string/button_check_wifi_status" />
 
 </LinearLayout>

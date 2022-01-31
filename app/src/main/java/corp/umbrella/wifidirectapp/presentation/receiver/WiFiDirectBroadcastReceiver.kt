@@ -8,6 +8,7 @@ import android.content.pm.PackageManager
 import android.net.NetworkInfo
 import android.net.wifi.p2p.WifiP2pManager
 import androidx.core.app.ActivityCompat
+import corp.umbrella.wifidirectapp.R
 import corp.umbrella.wifidirectapp.presentation.activities.MainActivity
 
 class WiFiDirectBroadcastReceiver(
@@ -42,7 +43,8 @@ class WiFiDirectBroadcastReceiver(
                         if (networkInfo.isConnected) {
                             manager.requestConnectionInfo(channel, activity.connectionInfoListener)
                         } else {
-                            activity.binding.connectionStatus.text = "Нет установленной связи"
+                            activity.binding.connectionStatus.text =
+                                context.getString(R.string.connection_status_zero)
                         }
                     }
                 }

@@ -13,6 +13,7 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import corp.umbrella.wifidirectapp.R
 import corp.umbrella.wifidirectapp.presentation.adapter.DevicesAdapter
 import corp.umbrella.wifidirectapp.databinding.ActivityMainBinding
 import corp.umbrella.wifidirectapp.domain.entity.Note
@@ -55,7 +56,7 @@ class MainActivity : AppCompatActivity() {
                 deviceAdapter.setData(it.deviceList.toList())
             }
             if (deviceAdapter.getData().isEmpty()) {
-                showToast("Устройства не обнаружены")
+                showToast(getString(R.string.devices_not_found))
             }
         }
     }
@@ -63,12 +64,12 @@ class MainActivity : AppCompatActivity() {
     val connectionInfoListener: WifiP2pManager.ConnectionInfoListener by lazy {
         WifiP2pManager.ConnectionInfoListener {
             if (it.groupFormed && it.isGroupOwner) {
-                binding.connectionStatus.text = "Host (связь установлена)"
+                binding.connectionStatus.text = getString(R.string.connection_status_host)
                 isHost = true
                 serverClass = ServerClass(this)
                 serverClass?.start()
             } else if (it.groupFormed) {
-                binding.connectionStatus.text = "Client (связь установлена)"
+                binding.connectionStatus.text = getString(R.string.connection_status_client)
                 isHost = false
                 clientClass = ClientClass(it.groupOwnerAddress, this)
                 clientClass?.start()
@@ -76,10 +77,9 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    var serverClass: ServerClass? = null
-    var clientClass: ClientClass? = null
-
-    var isHost: Boolean? = null
+    private var serverClass: ServerClass? = null
+    private var clientClass: ClientClass? = null
+    private var isHost: Boolean? = null
 
     companion object {
         private const val REQUEST_CODE_LOCATION = 1
@@ -93,40 +93,36 @@ class MainActivity : AppCompatActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            checkLocationPermission()
-        }
-
-        manager = getSystemService(Context.WIFI_P2P_SERVICE) as WifiP2pManager?
-        channel = manager?.initialize(this, mainLooper, null)
-        receiver = WiFiDirectBroadcastReceiver(manager, channel, this)
+        initListeners()
+        initReceiver()
 
         binding.devicesRv.adapter = deviceAdapter
         binding.readMessageRv.adapter = notesAdapter
 
+        viewModel.getNotes().observe(this) {
+            notesAdapter.setData(it)
+        }
+    }
+
+    private fun initReceiver() {
+        manager = getSystemService(Context.WIFI_P2P_SERVICE) as WifiP2pManager?
+        channel = manager?.initialize(this, mainLooper, null)
+        receiver = WiFiDirectBroadcastReceiver(manager, channel, this)
+    }
+
+    private fun initListeners() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            checkLocationPermission()
+        }
+
         binding.discoverButton.setOnClickListener {
             manager?.discoverPeers(channel, object : WifiP2pManager.ActionListener {
                 override fun onSuccess() {
-                    binding.connectionStatus.text = "Поиск устройств"
+                    binding.connectionStatus.text = getString(R.string.search_devices_in_process)
                 }
 
                 override fun onFailure(i: Int) {
-                    binding.connectionStatus.text = "Поиск устройств: ошибка"
-                }
-            })
-        }
-
-        deviceAdapter.onDeviceClickListener = { device ->
-            val config = WifiP2pConfig()
-            config.deviceAddress = device.deviceAddress
-
-            manager?.connect(channel, config, object : WifiP2pManager.ActionListener {
-                override fun onSuccess() {
-                    showToast("Установлена связь с ${device.deviceName}")
-                }
-
-                override fun onFailure(p0: Int) {
-                    showToast("Ошибка при установке связи")
+                    binding.connectionStatus.text = getString(R.string.search_devices_failure)
                 }
             })
         }
@@ -149,8 +145,25 @@ class MainActivity : AppCompatActivity() {
             viewModel.deleteNotes()
         }
 
-        viewModel.getNotes().observe(this) {
-            notesAdapter.setData(it)
+        deviceAdapter.onDeviceClickListener = { device ->
+            val config = WifiP2pConfig()
+            config.deviceAddress = device.deviceAddress
+
+            manager?.connect(channel, config, object : WifiP2pManager.ActionListener {
+                override fun onSuccess() {
+                    showToast(
+                        String.format(
+                            getString(R.string.connection_success), device.deviceName
+                        )
+                    )
+                }
+
+                override fun onFailure(p0: Int) {
+                    showToast(
+                        getString(R.string.connection_failure)
+                    )
+                }
+            })
         }
     }
 
@@ -167,9 +180,9 @@ class MainActivity : AppCompatActivity() {
     override fun onStop() {
         manager?.removeGroup(channel, object : WifiP2pManager.ActionListener {
             override fun onSuccess() {
-                showToast("Соединение было разорвано")
+                showToast(getString(R.string.connection_is_disable))
                 deviceAdapter.setData(listOf())
-                binding.connectionStatus.text = "Нет активной связи"
+                binding.connectionStatus.text = getString(R.string.connection_status_zero)
             }
 
             override fun onFailure(p0: Int) {
@@ -206,7 +219,7 @@ class MainActivity : AppCompatActivity() {
             if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                 //ничего не делаем
             } else {
-                showToast("Для корректной работы приложения требуется дать необходимые разрешения")
+                showToast(getString(R.string.message_permission_denied))
                 finish()
             }
         }
@@ -217,12 +230,12 @@ class MainActivity : AppCompatActivity() {
     }
 
     fun saveInputMessage(message: String) {
-        val note = Note(fromWho = "От другого: ", text = message)
+        val note = Note(fromWho = getString(R.string.label_input_message), text = message)
         viewModel.saveNote(note)
     }
 
     private fun saveOutputMessage(message: String) {
-        val note = Note(fromWho = "От меня: ", text = message)
+        val note = Note(fromWho = getString(R.string.label_output_message), text = message)
         viewModel.saveNote(note)
     }
 

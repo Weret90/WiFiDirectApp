@@ -2,7 +2,6 @@ package corp.umbrella.wifidirectapp.presentation.utils
 
 import android.os.Handler
 import android.os.Looper
-import android.widget.TextView
 import corp.umbrella.wifidirectapp.presentation.activities.MainActivity
 import java.io.InputStream
 import java.io.OutputStream
